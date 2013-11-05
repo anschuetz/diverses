@@ -1,0 +1,26 @@
+#!/bin/bash
+if [[ $1 == "" ]]
+then
+ echo kein Nutzername angegeben
+ exit 1
+fi
+if [ $(date +"%H") -lt 15 ]
+then
+  if ! $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep Betroffen | grep $1 > /dev/null) 
+  then
+    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Betroffen | grep $1 > /dev/null) 
+    then
+        exit 0
+    fi
+  fi
+else
+    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Betroffen | grep $1 > /dev/null) 
+    then
+        exit 0
+    fi
+fi
+
+#echo "/usr/bin/show-subst $1 | /usr/bin/mail -s Vertretungen für $(date) $1@morz.de"
+
+/usr/bin/show-subst $1 | /usr/bin/mail -r "$1@morz.de" -s "Vertretungen für $(date)" "$1@morz.de"
+

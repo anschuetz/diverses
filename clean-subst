@@ -1,0 +1,16 @@
+#!/bin/bash
+SUCHSTRING="subst_001.htm"
+PFAD="/var/www/Dropbox/vp-export/display-leh/f1"
+SUCHSTRING="test"
+PFAD="/root/Entwicklung/test"
+
+COUNT_LINKS_TO_FIRST=$(grep -c -l -e "$SUCHSTRING" $PFAD/* |wc -l)
+
+echo $COUNT_LINKS_TO_FIRST
+if [ $COUNT_LINKS_TO_FIRST -gt 1 ]
+then
+  echo es gibt mehr als eine Datei wir müssen sie suchen.
+  FILES=$(grep -l -e "$SUCHSTRING" $PFAD/*)
+  echo $FILES | tail -n-2
+fi
+
