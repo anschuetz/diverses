@@ -4,74 +4,102 @@ then
  echo kein Nutzername angegeben
  exit 1
 fi
+KOLLEGE=$1
 
 # weiter machen nur, wenn 
 # es vor 15 Uhr ist und es den Kollegen heute oder morgen betrifft
 # oder nach 15 Uhr ist und morgen den Kollegen betrifft. 
 if [ $(date +"%H") -lt 15 ]
 then
-  if ! $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep "Betroffen\|Abwesend" | grep $1 > /dev/null) 
+  if ! $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null) 
   then
-    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $1 > /dev/null) 
+    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null) 
     then
         exit 0
     fi
   fi
 else
-    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Betroffen | grep $1 > /dev/null)
+    if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null)
     then
-      if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Abwesend | grep $1 > /dev/null)
+      if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null)
       then
 	exit 0
       fi
     fi
 fi
 
-echo "Vertretungen für $1:"
+
+wer-vertritt-mich() {
+# usage: wer-vertritt-mich <Sub-Dir> <Wochentag-Filter>
+ cat /var/www/Dropbox/vp-export/display-leh/$1/* | grep $2 \
+| grep $KOLLEGE \
+| sed -e 's/->/verlegt nach/g' \
+| sed -e 's/</>/g' \
+| awk -F'>' '{ print $7 ": " $15 " am " $23 ", " $31 ".Std - " $47  " in Klasse " $39 " Raum " $55 " (" $15 " für " $63 ")" }' \
+| sed -e "s/&nbsp;/$KOLLEGE/g" | sed -e "s/---/$KOLLEGE/g" | column -t
+
+}
+
+HEUTE=$(date +"%a")
+
+case $HEUTE in
+"Fr"|"Sa")
+  MORGEN="Mo"
+  ;;
+*)
+  MORGEN=$(date -d 'tomorrow' +'%a')
+  ;;
+esac
+
+
+
+echo "Vertretungen für $KOLLEGE:"
 
 # Heutigen Plan nur dann ausgeben, wenn es vor 16h ist...
 if [ $(date +"%H") -lt 16 ]
 then
 # und wenn es überhaupt was gibt...
-  if $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep Betroffen | grep $1 > /dev/null) 
+  if $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep Betroffen | grep $KOLLEGE > /dev/null) 
   then
    echo
-   echo "HEUTE $(date '+%a'):"
+   echo "HEUTE $HEUTE:"
    echo " "
 
-   cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep $(date "+%a") \
-| grep $1 \
+   cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep $HEUTE \
+| grep $KOLLEGE \
 | sed -e 's/</>/g' \
 | awk -F'>' '{ print $7 ": " $15 " am " $23 ", " $31 ".Std - " $47  " in Klasse " $39 " Raum " $55 " (" $15 " für " $63 ")" }' \
-| sed -e "s/&nbsp;/$1/g" | sed -e "s/---/$1/g" | grep -e "^$1" #| column -t
+| sed -e "s/&nbsp;/$KOLLEGE/g" | sed -e "s/---/$KOLLEGE/g" | grep -e "^$KOLLEGE" #| column -t
 
    echo " "
    echo " "
   fi
 # falls abwesend, das noch vermerken:
-  if [ "$(cat /var/www/Dropbox/vp-export/display-leh/f1/subst_001.htm | grep Abwesend | grep -c $1)" == "1" ]
+  if [ "$(cat /var/www/Dropbox/vp-export/display-leh/f1/subst_001.htm | grep Abwesend | grep -v Betroffen | grep -c $KOLLEGE)" == "1" ]
   then
-    echo Du bist heute ausgeplant
+    echo Du bist heute ausgeplant und wirst folgendermaßen vertreten:
+    wer-vertritt-mich f1 $HEUTE
   fi
 
 fi
 
 # morgen nur, wenn es auch was gibt...
-if $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Betroffen | grep $1 > /dev/null) 
+if $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep Betroffen | grep $KOLLEGE > /dev/null) 
 then
- echo "MORGEN $(date -d 'tomorrow' +'%a'):"
+ echo "MORGEN $MORGEN:"
  echo " "
 
- cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep $(date -d "tomorrow" +"%a") \
-| grep $1 \
+ cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep $MORGEN \
+| grep $KOLLEGE \
 | sed -e 's/->/verlegt nach/g' \
 | sed -e 's/</>/g' \
 | awk -F'>' '{ print $7 ": " $15 " am " $23 ", " $31 ".Std - " $47  " in Klasse " $39 " Raum " $55 " (" $15 " für " $63 ")" }' \
-| sed -e "s/&nbsp;/$1/g" | sed -e "s/---/$1/g" | grep -e "^$1" #| column -t
+| sed -e "s/&nbsp;/$KOLLEGE/g" | sed -e "s/---/$KOLLEGE/g" | grep -e "^$KOLLEGE" #| column -t
 fi
 
 # falls abwesend, das noch vermerken:
-if [ "$(cat /var/www/Dropbox/vp-export/display-leh/f2/subst_001.htm | grep Abwesend | grep -c $1)" == "1" ]
+if [ "$(cat /var/www/Dropbox/vp-export/display-leh/f2/subst_001.htm | grep Abwesend | grep -v Betroffen | grep -c $KOLLEGE)" == "1" ]
 then
-  echo Du bist morgen ausgeplant
+  echo Du bist morgen ausgeplant und wirst folgendermaßen vertreten:
+  wer-vertritt-mich f2 $MORGEN
 fi
