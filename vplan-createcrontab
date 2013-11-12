@@ -1,0 +1,25 @@
+#!/bin/bash
+CRONTAB=/etc/cron.d/vplanabos
+LOG=/var/log/vplan-createcrontab.log
+KOLLEGE=${1}
+KOLLEGE_OHNE_UML="$(echo $KOLLEGE|sed 's/ü/ue/g' | sed 's/ä/ae/g' | sed 's/ö/oe/g' | sed 's/ß/ss/g')"
+CRONUSER=${KOLLEGE_OHNE_UML,,}
+MORGENS="10 7"
+ABENDS="0 18"
+touch "$CRONTAB"
+touch "$LOG"
+ABO=$(grep -c "$KOLLEGE " $CRONTAB)
+case $ABO in
+0)
+   echo "<h4> $1, du bekommst ab jetzt zweimal t&auml;glich den VPlan per Mail.</h4>Um das abzubestellen, einfach erneut klicken.<br />"
+   # in der nächsten Zeile sind die Leerzeichen hinter KOLLEGE und CRONUSER sehr wichtig...
+   echo "# $KOLLEGE / $CRONUSER  hat das am $(date) bestellt" >> $CRONTAB
+   echo "$MORGENS" ' * * * ' "$CRONUSER" ' /usr/bin/mail-subst' "$KOLLEGE" ' ' >> "$CRONTAB"
+   echo "$ABENDS" ' * * * ' "$CRONUSER" ' /usr/bin/mail-subst' "$KOLLEGE" ' ' >> "$CRONTAB"
+   echo "$(date): START $1 hat abonniert" >> $LOG
+   ;;
+*) echo "<h4>$1, ab sofort bekommst du keine Mails mehr.</h4>Um sie wieder zu bestellen, einfach erneut klicken<br />"
+   sed -i "/$KOLLEGE /d" "$CRONTAB"
+   echo "$(date): CANCEL $1 wurde abgemeldet" >> $LOG
+   ;;
+esac

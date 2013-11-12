@@ -5,16 +5,20 @@ then
  exit 1
 fi
 KOLLEGE=$1
-
+LOG=/var/log/show-subst.log
+touch $LOG
+echo -n "$(date): <$1> - " >> $LOG
+KILLTIME=16 # Das ist die Uhrzeit, ab wann der Plan nicht mehr ausgegeben wird. Sinnvoll: 16
 # weiter machen nur, wenn 
 # es vor 15 Uhr ist und es den Kollegen heute oder morgen betrifft
 # oder nach 15 Uhr ist und morgen den Kollegen betrifft. 
-if [ $(date +"%H") -lt 15 ]
+if [ $(date +"%H") -lt $KILLTIME ]
 then
   if ! $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null) 
   then
     if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null) 
     then
+	echo "nothing to show." >> $LOG
         exit 0
     fi
   fi
@@ -23,6 +27,7 @@ else
     then
       if ! $(cat /var/www/Dropbox/vp-export/display-leh/f2/* | grep "Betroffen\|Abwesend" | grep $KOLLEGE > /dev/null)
       then
+	echo "nothing to show." >> $LOG
 	exit 0
       fi
     fi
@@ -56,7 +61,7 @@ esac
 echo "Vertretungen für $KOLLEGE:"
 
 # Heutigen Plan nur dann ausgeben, wenn es vor 16h ist...
-if [ $(date +"%H") -lt 16 ]
+if [ $(date +"%H") -lt $KILLTIME ]
 then
 # und wenn es überhaupt was gibt...
   if $(cat /var/www/Dropbox/vp-export/display-leh/f1/* | grep Betroffen | grep $KOLLEGE > /dev/null) 
@@ -103,3 +108,6 @@ then
   echo Du bist morgen ausgeplant und wirst folgendermaßen vertreten:
   wer-vertritt-mich f2 $MORGEN
 fi
+
+echo "Plan erstellt..." >> $LOG
+

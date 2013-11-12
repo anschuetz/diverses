@@ -1,0 +1,14 @@
+#!/bin/bash
+echo ------------------------------------------------------------------------ 
+echo .
+echo .
+
+USERGESAMT=$(( $(smbstatus -b|wc -l) - 4 ))
+DSBUSER=$(smbstatus -b|grep -e "10.31.0.10"|wc -l)
+NORMALOS=$(( $USERGESAMT - $DSBUSER ))
+#echo Es sind $USERGESAMT User am Netzwerk angemeldet.
+#echo Abzüglich der $DSBUSER DSB-User sind es noch $NORMALOS Schüler / Lehrer.
+echo -n "Es sind $NORMALOS User angemeldet ("
+#echo -n $(smbstatus -b | grep -v "dsb"| tail -n+5| sed -e "s/  */ /g"|cut -d " " -f 2 | sort -u) | sed -e "s/ /, /g"
+echo -n $(smbstatus -b | grep -v "dsb"| tail -n+5| sed -e "s/  */ /g"|awk -F\  '{ print $2 "-" $3 }'| sort -u) | sed -e "s/ /, /g"
+echo ")"

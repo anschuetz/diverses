@@ -1,0 +1,18 @@
+#!/bin/bash
+### Dieses Skript verlinkt alle Dateien, die im angegebenen Verzeichnis liegen nach /usr/bin
+
+PFADE="/root/skripte /root/Entwicklung/diverses"
+LOG="/var/log/morz-verlinkungs.log"
+echo "#############################################" >> $LOG
+echo $(date) >> $LOG
+
+for PFAD in $PFADE
+do
+
+ for DATEI in $(ls $PFAD)
+ do
+  echo ln -s $PFAD/$DATEI /usr/bin/$DATEI | tee -a $LOG
+  ln -s $PFAD/$DATEI /usr/bin/$DATEI &>> $LOG
+ done
+
+done
